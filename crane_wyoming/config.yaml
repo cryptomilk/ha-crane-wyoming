@@ -5,6 +5,13 @@ description: >-
   Local text-to-speech (TTS) and speech-to-text (ASR) using the Crane
   inference engine via the Wyoming protocol.
 url: https://codeberg.org/cryptomilk/crane-wyoming
+# Registry image: Supervisor pulls this prebuilt multi-arch image instead
+# of building the Containerfile locally on the user's machine. CI's `build`
+# job (.github/workflows/builder.yaml) already publishes it per-arch and
+# home-assistant/builder@master combines the amd64/aarch64 pushes into one
+# manifest under this tag. `version` above must match the tag pushed for
+# each release.
+image: ghcr.io/cryptomilk/crane_wyoming
 arch:
   - amd64
   - aarch64
