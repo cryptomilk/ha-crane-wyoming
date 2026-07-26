@@ -106,9 +106,8 @@ architecture-specific optimizations for those newer cards.
 If you want a build tuned for your exact GPU, build the image yourself with
 `CUDA_COMPUTE_CAP` set to your card's compute capability (find it via
 `nvidia-smi --query-gpu=compute_cap --format=csv` on the host, or the [CUDA GPU
-list](https://developer.nvidia.com/cuda-gpus)). `rootfs/`, `translations/`, and
-`icon.png` are shared with the CPU app and aren't committed here, so populate
-them first:
+list](https://developer.nvidia.com/cuda-gpus)). `rootfs/` is shared with the
+CPU app and isn't committed here, so generate it first:
 
 ```console
 $ ./scripts/sync-cuda-shared.sh

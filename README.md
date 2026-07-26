@@ -6,10 +6,10 @@ Wyoming protocol.
 
 ## Apps
 
-- [Crane Wyoming](./crane_wyoming) — TTS/ASR via the Wyoming protocol on port
+- [Crane Wyoming](./crane_wyoming): TTS/ASR via the Wyoming protocol on port
   10200. See [crane_wyoming/DOCS.md](./crane_wyoming/DOCS.md) for the full
   user guide.
-- [Crane Wyoming (CUDA)](./crane_wyoming_cuda) — same app, but built with
+- [Crane Wyoming (CUDA)](./crane_wyoming_cuda): same app, but built with
   NVIDIA CUDA GPU acceleration. Requires an NVIDIA GPU and the NVIDIA
   Container Toolkit on the host. See
   [crane_wyoming_cuda/DOCS.md](./crane_wyoming_cuda/DOCS.md) for
@@ -17,9 +17,12 @@ Wyoming protocol.
 
 ## Supported models
 
-Models are opt-in — a fresh install downloads nothing. Pick one from the
+You need at least to download one model. Pick one from the
 app's configuration (`default_tts_model` / `default_asr_model`) or drop in
 your own under `/share/crane-wyoming/tts/` or `/share/crane-wyoming/asr/`.
+
+Supported models are:
+
 
 | Model | Kind | Notes |
 |---|---|---|
@@ -30,12 +33,19 @@ your own under `/share/crane-wyoming/tts/` or `/share/crane-wyoming/asr/`.
 | `qwen3-asr-0.6b` | ASR | Smaller speech-to-text model |
 | `qwen3-asr-1.7b` | ASR | Larger speech-to-text model |
 
+
+The models are all very slow on CPU. You can cache the results in that case.
+Support for models which should work just fine CPU is work in progress (like
+Kokoro).
 See [crane_wyoming/DOCS.md](./crane_wyoming/DOCS.md) for model management
-details and performance notes (CPU-only for now).
+details and performance notes.
 
 ## Installation
 
 1. In Home Assistant, go to **Settings** → **Apps** → **App Store**.
 2. Click the three-dot menu, choose **Repositories**, and add:
    `https://github.com/cryptomilk/ha-crane-wyoming`
-3. Find "Crane Wyoming" in the store and click **Install**.
+3. Both apps now show up in the store. Install **Crane Wyoming** for CPU-only
+   inference, or **Crane Wyoming (CUDA)** if you have an NVIDIA GPU — see
+   [crane_wyoming_cuda/DOCS.md](./crane_wyoming_cuda/DOCS.md) for its
+   prerequisites before installing.

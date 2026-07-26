@@ -6,6 +6,11 @@ description: >-
   inference engine via the Wyoming protocol, with NVIDIA CUDA GPU
   acceleration.
 url: https://codeberg.org/cryptomilk/crane-wyoming
+# Registry image: Supervisor pulls this prebuilt image instead of building
+# the Containerfile locally on the user's machine (CI publishes it, see
+# .github/workflows/builder.yaml). `version` above must match the tag
+# pushed for each release.
+image: ghcr.io/cryptomilk/crane_wyoming_cuda
 arch:
   - amd64
 init: false

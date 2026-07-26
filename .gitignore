@@ -1,9 +1,14 @@
 .tmp/
 
 # Populated by scripts/sync-cuda-shared.sh before building crane_wyoming_cuda/.
-# crane_wyoming/ is the source of truth; these are identical copies needed
-# only because the Docker build context is scoped to crane_wyoming_cuda/
-# itself and can't reach files in a sibling directory.
+# crane_wyoming_cuda uses a registry image (see its config.yaml), so
+# Supervisor never builds this locally on an end user's machine — rootfs/
+# is only needed by our own CI/local builds and isn't committed. It's
+# copied from crane_wyoming/, the source of truth, because the Docker
+# build context is scoped to crane_wyoming_cuda/ itself and can't reach
+# a sibling directory.
+#
+# translations/ and icon.png are NOT listed here: Supervisor reads those
+# directly from the repo for the App Store listing regardless of build
+# strategy, so they must stay committed (kept in sync via the same script).
 crane_wyoming_cuda/rootfs/
-crane_wyoming_cuda/translations/
-crane_wyoming_cuda/icon.png

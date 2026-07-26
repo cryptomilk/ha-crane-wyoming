@@ -15,6 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  check-cuda-shared-files:
+    name: Check crane_wyoming_cuda translations/icon.png are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Sync shared files
+        run: ./scripts/sync-cuda-shared.sh
+
+      - name: Fail if translations/icon.png are out of sync
+        run: |
+          if ! git diff --exit-code -- crane_wyoming_cuda/translations crane_wyoming_cuda/icon.png; then
+            echo "::error::crane_wyoming_cuda/{translations,icon.png} are out of sync with crane_wyoming/. Run ./scripts/sync-cuda-shared.sh and commit the result."
+            exit 1
+          fi
+
   build:
     name: Build ${{ matrix.arch }}
     runs-on: ubuntu-latest
