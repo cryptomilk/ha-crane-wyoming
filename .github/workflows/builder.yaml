@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-env:
-  APP: crane_wyoming
-
 permissions:
   contents: read
 
@@ -32,16 +29,15 @@ jobs:
             exit 1
           fi
 
-  build:
-    name: Build ${{ matrix.arch }}
+  init:
+    name: Prepare crane_wyoming build matrix
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [amd64, aarch64]
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      # info's version output is JSON-encoded (e.g. `"0.0.1"`, quotes
+      # included) — fromJSON() unwraps it back to a plain string so it
+      # doesn't end up embedded literally in an image tag downstream.
+      version: ${{ fromJSON(steps.info.outputs.version) }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -50,35 +46,72 @@ jobs:
         id: info
         uses: home-assistant/actions/helpers/info@master
         with:
-          path: "./${{ env.APP }}"
+          path: "./crane_wyoming"
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
+      - name: Prepare multi-arch matrix
+        id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@2026.06.0
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          architectures: '["amd64", "aarch64"]'
+          image-name: crane_wyoming
+          registry-prefix: ghcr.io/cryptomilk
 
-      - name: Build ${{ env.APP }} (${{ matrix.arch }})
-        uses: home-assistant/builder@master
-        with:
-          args: |
-            --${{ matrix.arch }} \
-            --target /data/${{ env.APP }} \
-            --image ${{ env.APP }} \
-            --docker-hub ghcr.io/cryptomilk \
-            --version ${{ steps.info.outputs.version }} \
-            ${{ github.event_name == 'push' && '' || '--test' }}
-
-  build-cuda:
-    name: Build crane_wyoming_cuda (amd64)
-    runs-on: ubuntu-latest
+  build:
+    name: Build crane_wyoming (${{ matrix.arch }})
+    needs: init
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
       packages: write
-    env:
-      APP: crane_wyoming_cuda
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.init.outputs.matrix) }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Build crane_wyoming (${{ matrix.arch }})
+        uses: home-assistant/builder/actions/build-image@2026.06.0
+        with:
+          arch: ${{ matrix.arch }}
+          image: ${{ matrix.image }}
+          image-tags: |
+            ${{ needs.init.outputs.version }}
+          version: ${{ needs.init.outputs.version }}
+          context: crane_wyoming
+          push: "${{ github.event_name == 'push' }}"
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
+          cache-gha-scope: crane_wyoming
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  manifest:
+    name: Publish crane_wyoming manifest
+    needs: [init, build]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      id-token: write
+    steps:
+      - name: Publish multi-arch manifest
+        uses: home-assistant/builder/actions/publish-multi-arch-manifest@2026.06.0
+        with:
+          architectures: '["amd64", "aarch64"]'
+          image-name: crane_wyoming
+          image-tags: |
+            ${{ needs.init.outputs.version }}
+          registry-prefix: ghcr.io/cryptomilk
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  build-cuda:
+    name: Build crane_wyoming_cuda (amd64)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -90,23 +123,19 @@ jobs:
         id: info
         uses: home-assistant/actions/helpers/info@master
         with:
-          path: "./${{ env.APP }}"
+          path: "./crane_wyoming_cuda"
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
+      - name: Build crane_wyoming_cuda (amd64)
+        uses: home-assistant/builder/actions/build-image@2026.06.0
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build ${{ env.APP }} (amd64)
-        uses: home-assistant/builder@master
-        with:
-          args: |
-            --amd64 \
-            --target /data/${{ env.APP }} \
-            --image ${{ env.APP }} \
-            --docker-hub ghcr.io/cryptomilk \
-            --version ${{ steps.info.outputs.version }} \
-            ${{ github.event_name == 'push' && '' || '--test' }}
+          arch: amd64
+          image: ghcr.io/cryptomilk/crane_wyoming_cuda
+          image-tags: |
+            ${{ fromJSON(steps.info.outputs.version) }}
+          version: ${{ fromJSON(steps.info.outputs.version) }}
+          context: crane_wyoming_cuda
+          push: "${{ github.event_name == 'push' }}"
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+          cache-gha-scope: crane_wyoming_cuda
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
