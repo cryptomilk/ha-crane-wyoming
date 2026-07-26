@@ -106,9 +106,12 @@ architecture-specific optimizations for those newer cards.
 If you want a build tuned for your exact GPU, build the image yourself with
 `CUDA_COMPUTE_CAP` set to your card's compute capability (find it via
 `nvidia-smi --query-gpu=compute_cap --format=csv` on the host, or the [CUDA GPU
-list](https://developer.nvidia.com/cuda-gpus)):
+list](https://developer.nvidia.com/cuda-gpus)). `rootfs/`, `translations/`, and
+`icon.png` are shared with the CPU app and aren't committed here, so populate
+them first:
 
 ```console
+$ ./scripts/sync-cuda-shared.sh
 $ podman build \
     --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm \
     --build-arg CUDA_VERSION=13-2 \

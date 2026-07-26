@@ -1,1 +1,9 @@
 .tmp/
+
+# Populated by scripts/sync-cuda-shared.sh before building crane_wyoming_cuda/.
+# crane_wyoming/ is the source of truth; these are identical copies needed
+# only because the Docker build context is scoped to crane_wyoming_cuda/
+# itself and can't reach files in a sibling directory.
+crane_wyoming_cuda/rootfs/
+crane_wyoming_cuda/translations/
+crane_wyoming_cuda/icon.png
