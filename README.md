@@ -9,6 +9,11 @@ Wyoming protocol.
 - [Crane Wyoming](./crane_wyoming) — TTS/ASR via the Wyoming protocol on port
   10200. See [crane_wyoming/DOCS.md](./crane_wyoming/DOCS.md) for the full
   user guide.
+- [Crane Wyoming (CUDA)](./crane_wyoming_cuda) — same app, but built with
+  NVIDIA CUDA GPU acceleration. Requires an NVIDIA GPU and the NVIDIA
+  Container Toolkit on the host. See
+  [crane_wyoming_cuda/DOCS.md](./crane_wyoming_cuda/DOCS.md) for
+  prerequisites and setup.
 
 ## Supported models
 

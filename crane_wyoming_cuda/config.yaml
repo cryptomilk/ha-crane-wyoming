@@ -1,0 +1,68 @@
+name: Crane Wyoming (CUDA)
+version: "0.0.1"
+slug: crane_wyoming_cuda
+description: >-
+  Local text-to-speech (TTS) and speech-to-text (ASR) using the Crane
+  inference engine via the Wyoming protocol, with NVIDIA CUDA GPU
+  acceleration.
+url: https://codeberg.org/cryptomilk/crane-wyoming
+arch:
+  - amd64
+init: false
+stage: experimental
+
+# HA auto-discovers Wyoming services
+discovery:
+  - wyoming
+
+ports:
+  "10200/tcp": null
+ports_description:
+  "10200/tcp": "Wyoming protocol"
+
+# Watchdog: Supervisor can health-check via the Wyoming describe event
+watchdog: "tcp://[HOST]:[PORT:10200]"
+
+# Persistent storage for downloaded models and TTS cache.
+# /share is used (rather than the app-private /data) so models survive
+# app uninstall/reinstall and can be inspected/managed from the host.
+map:
+  - share
+
+# The startup timeout must be generous: if a default model is configured
+# (see default_tts_model/default_asr_model below), first launch downloads
+# it, and loading large models into memory also takes time.
+timeout: 900
+
+startup: services
+
+# GPU access: HA apps have no --gpus/--runtime mechanism, so the container
+# gets the full host /dev tree instead. This is what exposes /dev/nvidia*
+# to the container; the NVIDIA Container Toolkit on the host then injects
+# the driver libraries (libcuda.so, libnvidia-ml.so) at launch, gated by
+# the NVIDIA_VISIBLE_DEVICES/NVIDIA_DRIVER_CAPABILITIES env vars below.
+# This drops the security rating from 5 to 1 (see DOCS.md).
+full_access: true
+
+environment:
+  NVIDIA_VISIBLE_DEVICES: "all"
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
+options:
+  model_path: /share/crane-wyoming
+  default_tts_model: none
+  default_asr_model: none
+  cpu_only: false
+  max_connections: 16
+  tts_cache_enabled: false
+  tts_cache_max_size: "500M"
+  debug_logging: false
+schema:
+  model_path: str
+  default_tts_model: list(qwen3-tts-base|qwen3-tts-customvoice-0.6b|qwen3-tts-customvoice-1.7b|voxtral|none)
+  default_asr_model: list(qwen3-asr-0.6b|qwen3-asr-1.7b|none)
+  cpu_only: bool
+  max_connections: int
+  tts_cache_enabled: bool
+  tts_cache_max_size: str
+  debug_logging: bool

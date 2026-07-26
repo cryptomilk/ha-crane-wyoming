@@ -15,6 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  check-cuda-shared-files:
+    name: Check crane_wyoming_cuda shared files are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Sync shared files
+        run: ./scripts/sync-cuda-shared.sh
+
+      - name: Fail if crane_wyoming_cuda is out of sync
+        run: |
+          if ! git diff --exit-code -- crane_wyoming_cuda/rootfs crane_wyoming_cuda/translations crane_wyoming_cuda/icon.png; then
+            echo "::error::crane_wyoming_cuda/{rootfs,translations,icon.png} are out of sync with crane_wyoming/. Run ./scripts/sync-cuda-shared.sh and commit the result."
+            exit 1
+          fi
+
   build:
     name: Build ${{ matrix.arch }}
     runs-on: ubuntu-latest
@@ -48,6 +65,43 @@ jobs:
         with:
           args: |
             --${{ matrix.arch }} \
+            --target /data/${{ env.APP }} \
+            --image ${{ env.APP }} \
+            --docker-hub ghcr.io/cryptomilk \
+            --version ${{ steps.info.outputs.version }} \
+            ${{ github.event_name == 'push' && '' || '--test' }}
+
+  build-cuda:
+    name: Build crane_wyoming_cuda (amd64)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      APP: crane_wyoming_cuda
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Get app information
+        id: info
+        uses: home-assistant/actions/helpers/info@master
+        with:
+          path: "./${{ env.APP }}"
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build ${{ env.APP }} (amd64)
+        uses: home-assistant/builder@master
+        with:
+          args: |
+            --amd64 \
             --target /data/${{ env.APP }} \
             --image ${{ env.APP }} \
             --docker-hub ghcr.io/cryptomilk \

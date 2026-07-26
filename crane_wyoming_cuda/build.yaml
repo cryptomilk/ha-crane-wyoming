@@ -1,0 +1,11 @@
+---
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base-debian:bookworm
+args:
+  BUILD_VERSION: main
+  CUDA_VERSION: "13-2"
+  # Ampere (sm_80) floor — see the Containerfile for why this can't go
+  # lower. The published ghcr.io image targets this single architecture;
+  # users with a different GPU generation can rebuild locally with a
+  # matching --build-arg CUDA_COMPUTE_CAP.
+  CUDA_COMPUTE_CAP: "80"

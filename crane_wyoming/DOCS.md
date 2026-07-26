@@ -65,9 +65,11 @@ first run, especially on a slow connection.
 
 ## Performance
 
-This app currently runs CPU-only. Inference speed depends heavily on your
-hardware. Expect noticeably slower responses on devices like a Raspberry Pi
-compared to a typical x86 machine. GPU passthrough is not yet supported.
+This app runs CPU-only. Inference speed depends heavily on your hardware.
+Expect noticeably slower responses on devices like a Raspberry Pi compared to
+a typical x86 machine. If you have an NVIDIA GPU, install
+[Crane Wyoming (CUDA)](../crane_wyoming_cuda) instead for GPU-accelerated
+inference.
 
 ## Port conflict with Piper
 

@@ -1,0 +1,97 @@
+# --- Builder stage: same Debian bookworm base as the runtime, so the
+# produced binary links against the same (or older) glibc it will run
+# against. `crane`/`candle-core` move fast, and Debian's packaged rustc
+# lags behind, so install the latest stable toolchain via rustup instead
+# of `apt install rustc` — this also sidesteps any glibc-version mismatch
+# a different-distro builder (e.g. Fedora) would introduce.
+#
+# CUDA_VERSION selects NVIDIA's apt package suffix (e.g. "13-2" for CUDA
+# 13.2). candle-kernels compiles custom kernels at build time via nvcc, so
+# the CUDA toolkit (not just the runtime) is required here.
+ARG BUILD_FROM
+FROM ${BUILD_FROM} AS builder
+
+ARG CUDA_VERSION=13-2
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential git curl ca-certificates pkg-config libssl-dev \
+       protobuf-compiler gnupg \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+       sh -s -- -y --default-toolchain stable \
+    && curl -fsSLO https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb \
+    && dpkg -i cuda-keyring_1.1-1_all.deb \
+    && rm -f cuda-keyring_1.1-1_all.deb \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+       "cuda-nvcc-${CUDA_VERSION}" \
+       "cuda-cudart-dev-${CUDA_VERSION}" \
+       "libcublas-dev-${CUDA_VERSION}" \
+       "libcurand-dev-${CUDA_VERSION}" \
+       "cuda-nvrtc-dev-${CUDA_VERSION}" \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/root/.cargo/bin:/usr/local/cuda/bin:${PATH}"
+ENV CUDA_HOME="/usr/local/cuda"
+
+ARG BUILD_VERSION=main
+RUN git clone --depth 1 --branch "${BUILD_VERSION}" \
+    https://codeberg.org/cryptomilk/crane-wyoming.git /src
+
+WORKDIR /src
+
+# candle-kernels compiles its .cu sources via nvcc at build time and needs
+# to know which GPU architecture to target. It normally auto-detects this
+# by running `nvidia-smi`, but no GPU is visible during `docker/podman
+# build` (only during `... run --gpus`/`--device`), so it must be set
+# explicitly here. 80 (Ampere, e.g. RTX 30-series) is the floor: this app
+# always selects the BF16 dtype on CUDA, and BF16 arithmetic instructions
+# (cvt.bf16) don't exist below sm_80 — older cards (Turing/Volta/Pascal)
+# can't run this build regardless of the value chosen here. nvcc's default
+# gencode for a single target also embeds PTX for that virtual
+# architecture, so the CUDA driver can JIT it forward onto newer cards
+# (Ada/Hopper/Blackwell) at first launch. Override to match your own GPU
+# with --build-arg CUDA_COMPUTE_CAP=<compute capability>, e.g. 89 for Ada.
+ARG CUDA_COMPUTE_CAP=80
+ENV CUDA_COMPUTE_CAP=${CUDA_COMPUTE_CAP}
+
+RUN cargo build --release --features cuda --bin crane-wyoming
+
+# --- Runtime stage: back to a clean copy of HA's official base-debian
+# image (fixed by BUILD_FROM, supplied by the home-assistant/builder
+# action). It ships bashio and s6-overlay, which the run scripts in
+# rootfs/ depend on. Only the compiled binaries and CUDA *runtime*
+# libraries are installed — none of the builder's toolchain, nvcc, or
+# source tree.
+#
+# The NVIDIA Container Toolkit on the host injects the host driver
+# libraries (libcuda.so, libnvidia-ml.so) into the container at launch;
+# NVIDIA_VISIBLE_DEVICES/NVIDIA_DRIVER_CAPABILITIES tell its runtime hook
+# what to inject.
+FROM ${BUILD_FROM}
+
+ARG CUDA_VERSION=13-2
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates curl gnupg python3 python3-pip \
+    && curl -fsSLO https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb \
+    && dpkg -i cuda-keyring_1.1-1_all.deb \
+    && rm -f cuda-keyring_1.1-1_all.deb \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+       "cuda-cudart-${CUDA_VERSION}" \
+       "libcublas-${CUDA_VERSION}" \
+       "libcurand-${CUDA_VERSION}" \
+       "cuda-nvrtc-${CUDA_VERSION}" \
+    && pip3 install --no-cache-dir --break-system-packages huggingface_hub \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+COPY --from=builder /src/target/release/crane-wyoming /usr/local/bin/crane-wyoming
+COPY --from=builder /src/tools/cw-model-download /usr/local/bin/cw-model-download
+COPY rootfs /
