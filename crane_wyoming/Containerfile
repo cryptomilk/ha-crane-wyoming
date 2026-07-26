@@ -18,16 +18,16 @@ RUN apt-get update \
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-ARG BUILD_VERSION=main
-RUN git clone --depth 1 --branch "${BUILD_VERSION}" \
+ARG SOURCE_REF=main
+RUN git clone --depth 1 --branch "${SOURCE_REF}" \
     https://codeberg.org/cryptomilk/crane-wyoming.git /src
 
 WORKDIR /src
 RUN cargo build --release --bin crane-wyoming
 
 # --- Runtime stage: back to a clean copy of HA's official base-debian
-# image (fixed by BUILD_FROM, supplied by the home-assistant/builder
-# action). It ships bashio and s6-overlay, which the run scripts in
+# image (fixed by BUILD_FROM, supplied as a build-arg by the CI
+# workflow). It ships bashio and s6-overlay, which the run scripts in
 # rootfs/ depend on. Only the compiled binaries are copied in — none of
 # the builder's toolchain or source tree.
 FROM ${BUILD_FROM}
