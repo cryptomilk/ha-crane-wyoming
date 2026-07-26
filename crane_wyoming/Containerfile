@@ -1,0 +1,45 @@
+# --- Builder stage: same Debian bookworm base as the runtime, so the
+# produced binary links against the same (or older) glibc it will run
+# against. `crane`/`candle-core` move fast, and Debian's packaged rustc
+# lags behind, so install the latest stable toolchain via rustup instead
+# of `apt install rustc` — this also sidesteps any glibc-version mismatch
+# a different-distro builder (e.g. Fedora) would introduce.
+ARG BUILD_FROM
+FROM ${BUILD_FROM} AS builder
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential git curl ca-certificates pkg-config libssl-dev \
+       protobuf-compiler \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+       sh -s -- -y --default-toolchain stable \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+ARG BUILD_VERSION=main
+RUN git clone --depth 1 --branch "${BUILD_VERSION}" \
+    https://codeberg.org/cryptomilk/crane-wyoming.git /src
+
+WORKDIR /src
+RUN cargo build --release --bin crane-wyoming
+
+# --- Runtime stage: back to a clean copy of HA's official base-debian
+# image (fixed by BUILD_FROM, supplied by the home-assistant/builder
+# action). It ships bashio and s6-overlay, which the run scripts in
+# rootfs/ depend on. Only the compiled binaries are copied in — none of
+# the builder's toolchain or source tree.
+FROM ${BUILD_FROM}
+
+# python3 + huggingface_hub are required by cw-model-download, which the
+# init service calls to fetch models on first run.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip \
+    && pip3 install --no-cache-dir --break-system-packages huggingface_hub \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /src/target/release/crane-wyoming /usr/local/bin/crane-wyoming
+COPY --from=builder /src/tools/cw-model-download /usr/local/bin/cw-model-download
+COPY rootfs /

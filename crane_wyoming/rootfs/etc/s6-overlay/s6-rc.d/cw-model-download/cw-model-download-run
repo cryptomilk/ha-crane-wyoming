@@ -1,0 +1,18 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+
+model_path="$(bashio::config 'model_path')"
+default_tts="$(bashio::config 'default_tts_model')"
+default_asr="$(bashio::config 'default_asr_model')"
+
+mkdir -p "${model_path}/tts" "${model_path}/asr"
+
+if [ "${default_tts}" != "none" ] && [ -z "$(ls -A "${model_path}/tts" 2>/dev/null)" ]; then
+    bashio::log.info "Downloading default TTS model: ${default_tts}"
+    python3 /usr/local/bin/cw-model-download --model "${default_tts}" --path "${model_path}"
+fi
+
+if [ "${default_asr}" != "none" ] && [ -z "$(ls -A "${model_path}/asr" 2>/dev/null)" ]; then
+    bashio::log.info "Downloading default ASR model: ${default_asr}"
+    python3 /usr/local/bin/cw-model-download --model "${default_asr}" --path "${model_path}"
+fi

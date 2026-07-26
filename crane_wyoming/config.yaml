@@ -1,0 +1,56 @@
+name: Crane Wyoming
+version: "0.0.1"
+slug: crane_wyoming
+description: >-
+  Local text-to-speech (TTS) and speech-to-text (ASR) using the Crane
+  inference engine via the Wyoming protocol.
+url: https://codeberg.org/cryptomilk/crane-wyoming
+arch:
+  - amd64
+  - aarch64
+init: false
+stage: experimental
+
+# HA auto-discovers Wyoming services
+discovery:
+  - wyoming
+
+ports:
+  "10200/tcp": null
+ports_description:
+  "10200/tcp": "Wyoming protocol"
+
+# Watchdog: Supervisor can health-check via the Wyoming describe event
+watchdog: "tcp://[HOST]:[PORT:10200]"
+
+# Persistent storage for downloaded models and TTS cache.
+# /share is used (rather than the app-private /data) so models survive
+# app uninstall/reinstall and can be inspected/managed from the host.
+map:
+  - share
+
+# The startup timeout must be generous: if a default model is configured
+# (see default_tts_model/default_asr_model below), first launch downloads
+# it, and loading large models into memory also takes time.
+timeout: 900
+
+startup: services
+
+options:
+  model_path: /share/crane-wyoming
+  default_tts_model: none
+  default_asr_model: none
+  cpu_only: false
+  max_connections: 16
+  tts_cache_enabled: false
+  tts_cache_max_size: "500M"
+  debug_logging: false
+schema:
+  model_path: str
+  default_tts_model: list(qwen3-tts-base|qwen3-tts-customvoice-0.6b|qwen3-tts-customvoice-1.7b|voxtral|none)
+  default_asr_model: list(qwen3-asr-0.6b|qwen3-asr-1.7b|none)
+  cpu_only: bool
+  max_connections: int
+  tts_cache_enabled: bool
+  tts_cache_max_size: str
+  debug_logging: bool
