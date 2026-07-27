@@ -1,8 +1,17 @@
-# Home Assistant App Repository: Crane Wyoming
+# Home Assistant App Repository for Crane Wyoming
+
+<p align="center">
+  <img src="./crane_wyoming/icon.png" alt="Crane Wyoming logo" width="96">
+</p>
 
 Home Assistant App repository for [crane-wyoming](https://codeberg.org/cryptomilk/crane-wyoming),
-a local text-to-speech (TTS) and speech-to-text (ASR) server that speaks the
-Wyoming protocol.
+a local, privacy-friendly text-to-speech (TTS) and speech-to-text (ASR)
+server that speaks the Wyoming protocol.
+
+No cloud. No API keys.
+
+Just state-of-the-art voice models running on your own hardware and plugging
+straight into Assist.
 
 ## Apps
 
