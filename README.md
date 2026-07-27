@@ -1,7 +1,7 @@
 # Home Assistant App Repository for Crane Wyoming
 
 <p align="center">
-  <img src="./crane_wyoming/icon.png" alt="Crane Wyoming logo" width="96">
+  <img src="./crane_wyoming/logo.png" alt="Crane Wyoming logo" width="250">
 </p>
 
 Home Assistant App repository for [crane-wyoming](https://codeberg.org/cryptomilk/crane-wyoming),
