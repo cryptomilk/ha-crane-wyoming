@@ -41,14 +41,12 @@ timeout: 900
 
 startup: services
 
-# GPU access: HA apps have no --gpus/--runtime mechanism, so the container
-# gets the full host /dev tree instead. This is what exposes /dev/nvidia*
-# to the container; the NVIDIA Container Toolkit on the host then injects
-# the driver libraries (libcuda.so, libnvidia-ml.so) at launch, gated by
-# the NVIDIA_VISIBLE_DEVICES/NVIDIA_DRIVER_CAPABILITIES env vars below.
-# This drops the security rating from 5 to 1 (see DOCS.md).
-full_access: true
-
+# GPU access: HA apps have no --gpus/--runtime mechanism, so this relies on
+# the host's Docker daemon having "default-runtime": "nvidia" set (see
+# DOCS.md prerequisites). With that in place, the NVIDIA Container
+# Toolkit's runtime hook injects /dev/nvidia* and the driver libraries
+# (libcuda.so, libnvidia-ml.so) into every container automatically, gated
+# by the NVIDIA_VISIBLE_DEVICES/NVIDIA_DRIVER_CAPABILITIES env vars below.
 environment:
   NVIDIA_VISIBLE_DEVICES: "all"
   NVIDIA_DRIVER_CAPABILITIES: "compute,utility"

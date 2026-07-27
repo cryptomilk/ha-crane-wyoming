@@ -32,11 +32,8 @@ Troubleshooting below.
 
 ## Security notice
 
-This app sets `full_access: true`, which grants it the entire host `/dev`
-tree (not just the GPU). Home Assistant apps have no narrower mechanism to
-request GPU device access alone. This drops the app's security rating from
-5 to 1 out of 6. Only install this app if you accept that trade-off; the
-CPU-only [Crane Wyoming](../crane_wyoming) app keeps the full 5/6 rating.
+This app keeps a security rating of 6/6 — same as the CPU-only
+[Crane Wyoming](../crane_wyoming) app.
 
 ## Installation
 

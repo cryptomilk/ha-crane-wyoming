@@ -1,0 +1,75 @@
+#include <tunables/global>
+
+profile crane_wyoming flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Capabilities
+  file,
+  signal (send) set=(kill,term,int,hup,cont),
+
+  # S6-Overlay
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /run/{,**} rwk,
+  /dev/tty rw,
+
+  # Bashio
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+
+  # Access to options.json and other files within the app
+  /data/** rw,
+
+  # Start new profile for the main server
+  /usr/local/bin/crane-wyoming cx -> crane-wyoming,
+
+  # Start new profile for the model downloader (the only thing in this app
+  # that needs outbound network — s6-overlay/bashio never do)
+  /usr/bin/python3 cx -> cw-model-download,
+
+  profile crane-wyoming flags=(attach_disconnected,mediate_deleted) {
+    #include <abstractions/base>
+
+    # Receive signals from S6-Overlay
+    signal (receive) peer=*_crane_wyoming,
+
+    # Wyoming protocol server (inbound only)
+    network inet stream,
+
+    # Access to options.json and TTS cache within the app
+    /data/** rw,
+
+    # Model files (read-only — models are downloaded by cw-model-download,
+    # not by this binary)
+    /share/** r,
+
+    # Access required for service functionality
+    /usr/local/bin/crane-wyoming r,
+  }
+
+  profile cw-model-download flags=(attach_disconnected,mediate_deleted) {
+    #include <abstractions/base>
+
+    # Outbound HTTPS + DNS to download from huggingface.co
+    network inet stream,
+    network inet dgram,
+
+    # Access required for service functionality
+    /usr/bin/python3* r,
+    /usr/lib/python3*/** r,
+    /usr/local/lib/python3*/** r,
+    /usr/local/bin/cw-model-download r,
+    /tmp/** rwk,
+
+    # Downloaded model files, plus huggingface_hub's own local cache
+    /share/** rw,
+    /root/.cache/huggingface/** rwk,
+  }
+}
