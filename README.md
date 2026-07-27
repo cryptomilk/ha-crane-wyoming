@@ -6,7 +6,8 @@
 
 Home Assistant App repository for [crane-wyoming](https://codeberg.org/cryptomilk/crane-wyoming),
 a local, privacy-friendly text-to-speech (TTS) and speech-to-text (ASR)
-server that speaks the Wyoming protocol.
+server written in [Rust](https://www.rust-lang.org/) that speaks the
+[Wyoming protocol](https://github.com/OHF-Voice/wyoming).
 
 No cloud. No API keys.
 
