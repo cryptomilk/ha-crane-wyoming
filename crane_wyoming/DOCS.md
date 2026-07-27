@@ -83,3 +83,8 @@ If you plan to do this, change the app's port!
 
 Please report issues on GitHub:
 https://github.com/cryptomilk/ha-crane-wyoming/issues
+
+## License
+
+GPLv2, same as [crane-wyoming](https://codeberg.org/cryptomilk/crane-wyoming)
+itself. See [LICENSE](../LICENSE).
