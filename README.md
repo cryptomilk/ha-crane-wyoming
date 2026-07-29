@@ -59,3 +59,11 @@ details and performance notes.
    inference, or **Crane Wyoming (CUDA)** if you have an NVIDIA GPU — see
    [crane_wyoming_cuda/DOCS.md](./crane_wyoming_cuda/DOCS.md) for its
    prerequisites before installing.
+
+## Setting up Home Assistant
+
+Once the app is installed, running, and has a model configured, you still
+need to wire it up to Assist as a Wyoming integration. For the full
+walkthrough (adding the integration, picking pipelines, voice satellite
+setup, etc.), see the upstream guide:
+[docs/home-assistant.md](https://codeberg.org/cryptomilk/crane-wyoming/src/branch/main/docs/home-assistant.md).
